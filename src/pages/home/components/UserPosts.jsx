@@ -1,4 +1,7 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import EditPost from "./EditPost";
+import DeleteConfirmModal from "./DeleteConfirmModal";
+import ViewPostModal from "./ViewPostModal";
 
 const API_BASE = "http://blogsystem.test/api";
 
@@ -14,6 +17,7 @@ const UserPosts = () => {
   const [editingPost, setEditingPost] = useState(null);
   const [deletingPost, setDeletingPost] = useState(null);
   const [viewingPost, setViewingPost] = useState(null);
+  const [activePostId, setActivePostId] = useState(null); // Sửa từ false thành null, dùng để quản lý menu
 
   // --- Lấy user từ token ---
   useEffect(() => {
@@ -69,21 +73,29 @@ const UserPosts = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [fetchPosts]);
 
-  // --- Gọi API xóa ---
-  const deletePost = async (id) => {
-    try {
-      const res = await fetch(`${API_BASE}/posts/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Xóa thất bại");
-      setPosts(posts.filter((p) => p.id !== id));
-      setDeletingPost(null);
-    } catch (err) {
-      console.error("Lỗi xóa:", err);
-      alert("Không thể xóa bài viết");
-    }
+  // --- Xử lý xóa từ modal ---
+  const handleDeleteConfirm = (id) => {
+    setPosts(posts.filter((p) => p.id !== id));
+    setDeletingPost(null);
+    setActivePostId(null); // Đóng menu sau khi xóa
   };
+
+  // --- Toggle menu 3 chấm ---
+  const menuRef = useRef(null);
+  const toggleMenu = (postId) => {
+    setActivePostId(activePostId === postId ? null : postId); // Toggle menu
+  };
+
+  // --- Đóng menu khi click ra ngoài ---
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setActivePostId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   if (!user) return <p>Đang tải thông tin user...</p>;
 
@@ -92,49 +104,51 @@ const UserPosts = () => {
       <h2 className="text-xl font-semibold mb-4">Bài viết của bạn</h2>
 
       {posts.map((post) => (
-        <div key={post.id} className="bg-white shadow rounded-lg p-4 mb-4">
+        <div key={post.id} className="bg-white shadow-md shadow-blue-300 rounded-lg p-4 mb-4">
           {/* Header user info */}
           <div className="flex justify-between items-start">
             <div className="flex items-center space-x-2">
               <img
-                src={ `http://blogsystem.test/storage/${user?.avatar || "avatar/default.jpg"}`}
+                src={`http://blogsystem.test/storage/${user?.avatar || "avatar/default.jpg"}`}
                 alt="avatar"
                 className="w-10 h-10 rounded-full"
               />
               <div>
-                <p className="font-semibold">{user.email}</p>
+                <p className="font-semibold">{user.name || user.email}</p> {/* Ưu tiên name, fallback email */}
                 <p className="text-gray-500 text-sm">{post.category?.name}</p>
               </div>
             </div>
 
             {/* Menu 3 chấm */}
-            <div className="relative">
+            <div className="relative" ref={activePostId === post.id ? menuRef : null}>
               <button
                 className="text-gray-500 hover:text-gray-700 p-2 cursor-pointer font-bold"
-                onClick={() => {
-                  const menu = document.getElementById(`menu-${post.id}`);
-                  menu.classList.toggle("hidden");
-                }}
+                onClick={() => toggleMenu(post.id)}
               >
                 ⋮
               </button>
-              <div
-                id={`menu-${post.id}`}
-                className="hidden absolute right-0 mt-2 bg-white border rounded shadow-md"
-              >
-                <button
-                  className="block px-4 py-2 hover:bg-gray-100 w-full text-left"
-                  onClick={() => setEditingPost(post)}
-                >
-                  ✏️ Chỉnh sửa
-                </button>
-                <button
-                  className="block px-4 py-2 hover:bg-gray-100 w-full text-left"
-                  onClick={() => setDeletingPost(post)}
-                >
-                  🗑️ Xóa
-                </button>
-              </div>
+              {activePostId === post.id && (
+                <div className="w-35 absolute right-0 mt-2 bg-white rounded shadow-lg">
+                  <button
+                    className="block px-4 py-2 hover:bg-gray-100 w-full text-left"
+                    onClick={() => {
+                      setEditingPost(post);
+                      setActivePostId(null); // Đóng menu khi mở edit
+                    }}
+                  >
+                    ✏️ Chỉnh sửa
+                  </button>
+                  <button
+                    className="block px-4 py-2 hover:bg-gray-100 w-full text-left"
+                    onClick={() => {
+                      setDeletingPost(post);
+                      setActivePostId(null); // Đóng menu khi mở delete
+                    }}
+                  >
+                    🗑️ Xóa
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -146,7 +160,7 @@ const UserPosts = () => {
               className="rounded-md my-3"
             />
           )}
-
+          
           {/* Content */}
           <p>{post.content}</p>
 
@@ -155,7 +169,10 @@ const UserPosts = () => {
             <button className="hover:text-blue-500">👍 Like</button>
             <button
               className="hover:text-blue-500"
-              onClick={() => setViewingPost(post)}
+              onClick={() => {
+                setViewingPost(post);
+                setActivePostId(null); // Đóng menu khi mở view
+              }}
             >
               💬 Comment
             </button>
@@ -168,78 +185,30 @@ const UserPosts = () => {
 
       {/* Modal sửa */}
       {editingPost && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg w-96">
-            <h3 className="text-lg font-bold mb-4">Chỉnh sửa bài viết</h3>
-            <textarea
-              className="w-full border p-2 rounded"
-              defaultValue={editingPost.content}
-            ></textarea>
-            <div className="flex justify-end mt-4 space-x-2">
-              <button onClick={() => setEditingPost(null)}>Hủy</button>
-              <button className="bg-blue-500 text-white px-4 py-2 rounded">
-                Lưu
-              </button>
-            </div>
-          </div>
-        </div>
+        <EditPost
+          post={editingPost}
+          onClose={() => setEditingPost(null)}
+          onUpdated={(updated) =>
+            setPosts(posts.map((p) => (p.id === updated.id ? updated : p)))
+          }
+        />
       )}
 
       {/* Modal xóa */}
       {deletingPost && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg w-80">
-            <h3 className="text-lg font-bold mb-4">Xóa bài viết?</h3>
-            <p>Bạn có chắc chắn muốn xóa bài viết này?</p>
-            <div className="flex justify-end mt-4 space-x-2">
-              <button onClick={() => setDeletingPost(null)}>Hủy</button>
-              <button
-                className="bg-red-500 text-white px-4 py-2 rounded"
-                onClick={() => deletePost(deletingPost.id)}
-              >
-                Xóa
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteConfirmModal
+          post={deletingPost}
+          onClose={() => setDeletingPost(null)}
+          onConfirm={handleDeleteConfirm}
+        />
       )}
 
       {/* Modal chi tiết + comments */}
       {viewingPost && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center overflow-y-auto">
-          <div className="bg-white p-6 rounded-lg w-[600px]">
-            <h3 className="text-lg font-bold mb-4">{viewingPost.title}</h3>
-            {viewingPost.image && (
-              <img
-                src={`http://blogsystem.test/storage/${viewingPost.image}`}
-                alt={viewingPost.title}
-                className="rounded mb-4"
-              />
-            )}
-            <p className="mb-4">{viewingPost.content}</p>
-
-            <h4 className="font-semibold mb-2">Bình luận</h4>
-            {viewingPost.comments?.length > 0 ? (
-              viewingPost.comments.map((c) => (
-                <div key={c.id} className="border-b py-2">
-                  <p className="font-semibold">{c.user?.name}</p>
-                  <p>{c.content}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500">Chưa có bình luận</p>
-            )}
-
-            <div className="flex justify-end mt-4">
-              <button
-                className="bg-gray-500 text-white px-4 py-2 rounded"
-                onClick={() => setViewingPost(null)}
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
+        <ViewPostModal 
+          post={viewingPost}
+          onClose={() => setViewingPost(null)}
+        />  
       )}
     </div>
   );

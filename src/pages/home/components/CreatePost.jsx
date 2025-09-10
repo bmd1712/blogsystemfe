@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-const CreatePost = () => {
+const CreatePost = ({onSuccess}) => {
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -15,21 +15,31 @@ const CreatePost = () => {
   const [searchCategory, setSearchCategory] = useState("");
   const [preview, setPreview] = useState(null);
 
-  // --- Lấy categories theo search ---
+  // --- Lấy categories theo search (fix URL với backtick và thêm token nếu cần) ---
   useEffect(() => {
     if (searchCategory.length > 0) {
-      fetch(`http://blogsystem.test/api/categories?search=${searchCategory}`)
+      const token = localStorage.getItem("authToken");
+      fetch(`http://blogsystem.test/api/categories?search=${searchCategory}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
         .then((res) => res.json())
-        .then((data) => setCategories(data));
+        .then((data) => setCategories(data.data || data));
+    } else {
+      setCategories([]);
     }
   }, [searchCategory]);
 
-  // --- Lấy tags theo search ---
+  // --- Lấy tags theo search (fix tương tự) ---
   useEffect(() => {
     if (searchTag.length > 0) {
-      fetch(`http://blogsystem.test/api/tags?search=${searchTag}`)
+      const token = localStorage.getItem("authToken");
+      fetch(`http://blogsystem.test/api/tags?search=${searchTag}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
         .then((res) => res.json())
-        .then((data) => setTags(data));
+        .then((data) => setTags(data.data || data));
+    } else {
+      setTags([]);
     }
   }, [searchTag]);
 
@@ -72,12 +82,16 @@ const CreatePost = () => {
 
   // --- Tạo mới tag (local, chỉ lưu tên) ---
   const handleCreateTag = () => {
-    handleAddTag({ tag: searchTag }); // chỉ có {tag}
+    if (searchTag && !formData.tags.find((t) => t.tag === searchTag)) {
+      setFormData({ ...formData, tags: [...formData.tags, { tag: searchTag }] });
+    }
+    setSearchTag("");
   };
 
   // --- Tạo mới category (lưu thật vào DB) ---
   const handleCreateCategory = async () => {
     const token = localStorage.getItem("authToken");
+    if (!token) return alert("Chưa đăng nhập!");
     try {
       const res = await fetch("http://blogsystem.test/api/categories", {
         method: "POST",
@@ -99,7 +113,7 @@ const CreatePost = () => {
     }
   };
 
-  // --- Submit form ---
+  // --- Submit form (fix append tags với backtick) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -112,12 +126,13 @@ const CreatePost = () => {
     // Gửi category_id thay vì category object
     if (formData.category) data.append("category_id", formData.category.id);
 
-    // Gửi tags theo tên (tag), không gửi id
+    // Gửi tags theo tên (tag), không gửi id (fix dấu ngoặc)
     formData.tags.forEach((tag, i) => {
       data.append(`tags[${i}]`, tag.tag);
     });
 
     const token = localStorage.getItem("authToken");
+    if (!token) return alert("Chưa đăng nhập!");
 
     try {
       const res = await fetch("http://blogsystem.test/api/posts", {
@@ -129,10 +144,13 @@ const CreatePost = () => {
       });
 
       if (!res.ok) throw new Error("Có lỗi xảy ra");
-
       const result = await res.json();
       alert("Thêm thành công!");
+      // Reset form sau submit
+      setFormData({ title: "", content: "", image: null, category: null, tags: [] });
+      setPreview(null);
       console.log(result);
+      if (onSuccess) onSuccess();
     } catch (err) {
       console.error(err);
       alert("Lỗi khi thêm bài viết");
@@ -167,6 +185,7 @@ const CreatePost = () => {
               setFormData({ ...formData, content: e.target.value })
             }
             className="w-full border p-2 rounded"
+            rows="4" // Thêm rows để giống edit
             required
           />
         </div>
@@ -185,7 +204,7 @@ const CreatePost = () => {
             htmlFor="image-upload"
             className="inline-block px-3 py-1 bg-blue-500 text-white rounded cursor-pointer"
           >
-            +
+            + Chọn ảnh
           </label>
           {preview && (
             <div className="mt-2">
@@ -281,9 +300,9 @@ const CreatePost = () => {
             </button>
           )}
           <div className="mt-2 flex flex-wrap gap-2">
-            {formData.tags.map((t) => (
+            {formData.tags.map((t, index) => ( // Thêm index cho key an toàn
               <span
-                key={t.id ?? t.tag}
+                key={t.id ?? index}
                 className="relative flex items-center px-2 py-1 bg-green-100 text-green-700 rounded inline-block"
               >
                 {t.tag}

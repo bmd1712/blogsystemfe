@@ -1,10 +1,13 @@
 import React from "react";
+import Posts from "./components/Posts";
+import Create from '../home/components/Create'
 
 const NewsFeed = () => {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold">Bảng tin</h1>
-      <p className="mt-4">Đây là nơi hiển thị bài viết sau khi đăng nhập.</p>
+      <Create/>
+      <Posts/>
     </div>
   );
 };
