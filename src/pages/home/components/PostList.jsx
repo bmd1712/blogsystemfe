@@ -28,47 +28,80 @@ const PostList = ({ apiUrl, title }) => {
     if (token) fetchUser();
   }, [token]);
 
-  // Lấy bài viết
-  const fetchPosts = useCallback(async () => {
-    if (loading || !hasMore) return;
+    // Lấy bài viết
+    const fetchPosts = useCallback(async (pageNumber) => {
+    if (loading || !hasMore || !apiUrl) return;
 
     setLoading(true);
     try {
-      const res = await fetch(`${apiUrl}?page=${page}`, {
+        const res = await fetch(`${apiUrl}?page=${pageNumber}`, {
         headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Không thể tải posts");
+        });
+        if (!res.ok) throw new Error("Không thể tải posts");
 
-      const data = await res.json();
-      setPosts((prev) => [...prev, ...data.data]);
-      setHasMore(data.next_page_url !== null);
-      setPage((prev) => prev + 1);
+        const data = await res.json();
+        setPosts((prev) => [...prev, ...data.data]);
+        setHasMore(data.next_page_url !== null);
+
+        // 👉 tăng page sau khi gọi xong
+        setPage(pageNumber + 1);
     } catch (err) {
-      console.error("Lỗi lấy posts:", err);
+        console.error("Lỗi lấy posts:", err);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  }, [page, hasMore, loading, token, apiUrl]);
+    }, [loading, hasMore, token, apiUrl]);
+    // Hàm debounce
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }   
+    // Reset khi đổi apiUrl
+    useEffect(() => {
+    if (apiUrl) {
+        setPosts([]);
+        setPage(1);
+        setHasMore(true);
+        fetchPosts(1); // load trang đầu
+    }
+    }, [apiUrl]);
 
-  useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    // 👉 Khi page thay đổi thì fetch
+    // useEffect(() => {
+    // if (apiUrl && page === 1) {
+    //     fetchPosts(1); // load page đầu tiên
+    // }
+    // }, [apiUrl, page, fetchPosts]);
 
-  // Scroll load thêm
-  useEffect(() => {
+    // 👉 Scroll xuống cuối mới load tiếp
+    useEffect(() => {
     const handleScroll = () => {
-      if (
+        if (
         window.innerHeight + window.scrollY >=
         document.body.offsetHeight - 200
-      ) {
-        fetchPosts();
-      }
+        ) {
+        if (!loading && hasMore) {
+            fetchPosts(page);
+        }
+        }
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [fetchPosts]);
 
-  if (!currentUser) return <p>Đang tải thông tin user...</p>;
+    const debouncedHandleScroll = debounce(handleScroll, 200);
+    window.addEventListener("scroll", debouncedHandleScroll);
+    return () => window.removeEventListener("scroll", debouncedHandleScroll);
+    }, [page, hasMore, loading, fetchPosts]);
+
+
+    
+
+  if (!currentUser || !apiUrl) return <p>Đang tải...</p>;
 
   //lọc trùng trước khi render
   const uniquePosts = posts.filter(

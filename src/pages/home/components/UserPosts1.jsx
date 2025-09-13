@@ -7,7 +7,6 @@ const UserPosts1 = ({ userId }) => {
   const token = localStorage.getItem("authToken");
   const [currentUser, setCurrentUser] = useState(null);
 
-  // Lấy user hiện tại
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -24,12 +23,12 @@ const UserPosts1 = ({ userId }) => {
     if (token) fetchUser();
   }, [token]);
 
-  // Xây dựng apiUrl dựa trên currentUser.id (ưu tiên nếu có)
+  if (!currentUser && !userId) {
+    return <p>Đang tải thông tin user...</p>;
+  }
   const apiUrl = currentUser
     ? `${API_BASE}/users/${currentUser.id}/posts`
-    : userId
-    ? `${API_BASE}/users/${userId}/posts`
-    : null;
+    : `${API_BASE}/users/${userId}/posts`;
 
   return (
     <PostList
