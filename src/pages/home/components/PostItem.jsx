@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import EditPost from "./EditPost";
 import DeleteConfirmModal from "./DeleteConfirmModal";
 import ViewPostModal from "./ViewPostModal";
+import { FaPenToSquare, FaRegTrashCan } from "react-icons/fa6";
 
 const API_BASE = "http://blogsystem.test/api";
 const STORAGE_BASE = "http://blogsystem.test/storage";
@@ -62,6 +63,36 @@ const PostItem = ({ post, currentUser }) => {
     }
   };
 
+    // Hàm format thời gian
+    const formatPostDate = (dateString) => {
+      if (!dateString) return "";
+
+      const date = new Date(dateString);
+      const now = new Date();
+
+      const diffMs = now - date; // mili giây
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+      if (diffHours < 24) {
+        if (diffHours < 1) {
+          const diffMinutes = Math.floor(diffMs / (1000 * 60));
+          return diffMinutes <= 1
+            ? "Vừa xong"
+            : ` ${diffMinutes} phút trước`;
+        }
+        return `${diffHours} giờ trước`;
+      }
+
+      // Nếu quá 24h thì hiển thị dd/mm/yyyy HH:mm
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
+
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
+    };  
 
   return (
     <div className="bg-white shadow-md shadow-blue-300 rounded-lg p-4 mb-4">
@@ -75,9 +106,10 @@ const PostItem = ({ post, currentUser }) => {
           />
           <div>
             <p className="font-semibold">{post.user?.email}</p>
-            <p className="text-gray-500 text-sm min-h-[20px]">
+            <p className="text-gray-500 text-sm ">
               {post.category?.name || ""}
             </p>
+            <p>{formatPostDate(post.created_at)}</p>
           </div>
         </div>
 
@@ -98,16 +130,16 @@ const PostItem = ({ post, currentUser }) => {
               className="w-35 hidden absolute right-0 mt-2 bg-white rounded shadow-lg "
             >
               <button
-                className="block px-4 py-2 hover:bg-gray-100 w-full text-left"
+                className="flex block px-4 py-2 hover:bg-gray-100 w-full text-left"
                 onClick={() => setEditingPost(post)}
               >
-                ✏️ Chỉnh sửa
+                <FaPenToSquare className="mt-1 mr-3"/> Chỉnh sửa
               </button>
               <button
-                className="block px-4 py-2 hover:bg-gray-100 w-full text-left"
+                className="flex block px-4 py-2 hover:bg-gray-100 w-full text-left"
                 onClick={() => setDeletingPost(post)}
               >
-                🗑️ Xóa
+                <FaRegTrashCan className="mt-1 mr-3"/> Xóa
               </button>
             </div>
           </div>

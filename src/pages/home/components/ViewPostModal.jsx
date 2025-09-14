@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { FaRegCircleXmark, FaRegTrashCan, FaRegPaperPlane } from "react-icons/fa6";
 
 const API_BASE = "http://blogsystem.test/api";
 
@@ -6,12 +7,18 @@ const ViewPostModal = ({ post, onClose, onCommentCountChange }) => {
   const token = localStorage.getItem("authToken");
   const [currentUser, setCurrentUser] = useState(null);
 
-  const [comments, setComments] = useState([]);       // danh sách cmt đang hiển thị
-  const [page, setPage] = useState(1);                // page khi bấm "Xem thêm"
-  const [lastPage, setLastPage] = useState(1);        // tổng page từ API
-  const [total, setTotal] = useState(post.comments_count); // tổng cmt (truyền sẵn từ PostItem)
+  const [comments, setComments] = useState([]);
+  const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [total, setTotal] = useState(post.comments_count);
   const [loadingMore, setLoadingMore] = useState(false);
   const [newComment, setNewComment] = useState("");
+
+  // Disable scroll outside
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = "auto"; };
+  }, []);
 
   // Lấy user hiện tại
   useEffect(() => {
@@ -39,7 +46,6 @@ const ViewPostModal = ({ post, onClose, onCommentCountChange }) => {
         });
         if (!res.ok) throw new Error("Không thể tải bình luận");
         const data = await res.json();
-        // API này trả về post kèm 3 cmt mới nhất trong data.comments
         setComments(data.comments || []);
       } catch (err) {
         console.error(err);
@@ -48,7 +54,7 @@ const ViewPostModal = ({ post, onClose, onCommentCountChange }) => {
     fetchFirstComments();
   }, [post.id, token]);
 
-  // Xem thêm bình luận
+  // Xem thêm
   const loadMoreComments = async () => {
     if (loadingMore || page > lastPage) return;
     setLoadingMore(true);
@@ -60,11 +66,8 @@ const ViewPostModal = ({ post, onClose, onCommentCountChange }) => {
       if (!res.ok) throw new Error("Không thể tải thêm bình luận");
       const data = await res.json();
       setComments(prev => {
-        // gộp và lọc trùng theo id
         const merged = [...prev, ...data.data];
-        return merged.filter(
-          (c, idx, self) => idx === self.findIndex(x => x.id === c.id)
-        );
+        return merged.filter((c, i, self) => i === self.findIndex(x => x.id === c.id));
       });
       setLastPage(data.last_page);
       setPage(p => p + 1);
@@ -75,7 +78,7 @@ const ViewPostModal = ({ post, onClose, onCommentCountChange }) => {
     }
   };
 
-  // Gửi bình luận mới
+  // Gửi bình luận
   const submitComment = async () => {
     if (!newComment.trim()) return;
     try {
@@ -89,9 +92,19 @@ const ViewPostModal = ({ post, onClose, onCommentCountChange }) => {
       });
       if (!res.ok) throw new Error("Lỗi khi gửi bình luận");
       const created = await res.json();
-      setComments(prev => [created, ...prev]);
+
+      const enrichedComment = {
+        ...created,
+        user: {
+          id: currentUser.id,
+          email: currentUser.email,
+          avatar: currentUser.avatar,
+        },
+      };
+
+      setComments(prev => [enrichedComment, ...prev]);
       setTotal(t => t + 1);
-      onCommentCountChange?.(total + 1); // 🔹 cập nhật ra ngoài
+      onCommentCountChange?.(total + 1);
       setNewComment("");
     } catch (err) {
       console.error(err);
@@ -109,87 +122,104 @@ const ViewPostModal = ({ post, onClose, onCommentCountChange }) => {
       if (!res.ok) throw new Error("Không thể xoá bình luận");
       setComments(prev => prev.filter(c => c.id !== commentId));
       setTotal(t => t - 1);
-      onCommentCountChange?.(total - 1); // cập nhật ra ngoài
+      onCommentCountChange?.(total - 1);
     } catch (err) {
       console.error(err);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center overflow-y-auto z-50">
-      <div className="bg-white p-6 rounded-lg w-[600px] max-h-[90vh] overflow-y-auto">
-        {/* Nội dung bài viết */}
-        <h3 className="text-lg font-bold mb-4">{post.title}</h3>
-        {post.image && (
-          <img
-            src={`http://blogsystem.test/storage/${post.image}`}
-            alt={post.title}
-            className="rounded mb-4 w-full max-h-64 object-cover"
-          />
-        )}
-        <p className="mb-4">{post.content}</p>
-
-        {/* Bình luận */}
-        <h4 className="font-semibold mb-2">
-          Đang hiển thị {comments.length} / {total} bình luận
-        </h4>
-
-        {comments.length > 0 ? (
-          comments.map((c) => (
-            <div key={c.id} className="border-b py-2 flex justify-between">
-              <div>
-                <p className="font-semibold">{c.user?.name}</p>
-                <p className="text-sm text-gray-600">{c.content}</p>
-              </div>
-              {(currentUser?.id === c.user_id || currentUser?.id === post.user_id) && (
-                <button
-                  className="text-red-500 text-sm hover:underline"
-                  onClick={() => deleteComment(c.id)}
-                >
-                  Xoá
-                </button>
-              )}
-            </div>
-          ))
-        ) : (
-          <p className="text-gray-500">Chưa có bình luận</p>
-        )}
-
-        {/* Nút xem thêm */}
-        {page <= lastPage && comments.length < total && (
-          <button
-            onClick={loadMoreComments}
-            disabled={loadingMore}
-            className="text-blue-500 hover:underline mt-2"
-          >
-            {loadingMore ? "Đang tải..." : "Xem thêm bình luận"}
-          </button>
-        )}
-
-        {/* Thêm bình luận */}
-        <div className="mt-4">
-          <input
-            className="w-full border rounded p-2"
-            rows="2"
-            placeholder="Viết bình luận..."
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-          ></input>
-          <button
-            onClick={submitComment}
-            className="bg-blue-500 text-white px-4 py-2 mt-2 rounded"
-          >
-            Gửi
+    <div
+      className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white bg-opacity-95 rounded-lg w-[600px] max-h-[90vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex justify-between items-center px-4 py-2 border-b bg-gray-100">
+          <h3 className="font-bold">Bài viết của {post.user?.email}</h3>
+          <button onClick={onClose} className="text-gray-600 hover:text-black">
+            <FaRegCircleXmark size={22} />
           </button>
         </div>
 
-        {/* Đóng modal */}
-        <div className="flex justify-end mt-4">
+        {/* Nội dung */}
+        <div className="p-4 overflow-y-auto flex-1">
+          <h4 className="text-lg font-semibold mb-2">{post.title}</h4>
+          {post.image && (
+            <img
+              src={`http://blogsystem.test/storage/${post.image}`}
+              alt={post.title}
+              className="rounded mb-4 w-full max-h-64 object-cover"
+            />
+          )}
+          <p className="mb-4">{post.content}</p>
+
+          <h4 className="font-semibold mb-2">
+            Đang hiển thị {comments.length} / {total} bình luận
+          </h4>
+
+          {comments.length > 0 ? (
+            comments.map((c) => (
+              <div key={c.id} className="border-b py-2 flex items-start gap-2">
+                {c.user?.avatar ? (
+                  <img
+                    src={`http://blogsystem.test/storage/${c.user.avatar}`}
+                    alt="avatar"
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                    <span className="text-xs text-white">
+                      {c.user?.email?.[0]?.toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div className="flex-1">
+                  <p className="font-semibold">{c.user?.email}</p>
+                  <p className="text-sm text-gray-600">{c.content}</p>
+                </div>
+                {(currentUser?.id === c.user_id || currentUser?.id === post.user_id) && (
+                  <button
+                    className="text-red-500 hover:text-red-700"
+                    onClick={() => deleteComment(c.id)}
+                  >
+                    <FaRegTrashCan size={18} />
+                  </button>
+                )}
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500">Chưa có bình luận</p>
+          )}
+
+          {page <= lastPage && comments.length < total && (
+            <button
+              onClick={loadMoreComments}
+              disabled={loadingMore}
+              className="text-blue-500 hover:underline mt-2"
+            >
+              {loadingMore ? "Đang tải..." : "Xem thêm bình luận"}
+            </button>
+          )}
+        </div>
+
+        {/* Nhập comment */}
+        <div className="border-t p-2 flex items-center relative">
+          <input
+            className="flex-1 border rounded-full px-4 py-2 pr-10"
+            placeholder="Viết bình luận..."
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submitComment()}
+          />
           <button
-            className="bg-gray-500 text-white px-4 py-2 rounded"
-            onClick={onClose}
+            onClick={submitComment}
+            className="absolute right-4 text-blue-500"
           >
-            Đóng
+            <FaRegPaperPlane size={20} />
           </button>
         </div>
       </div>
