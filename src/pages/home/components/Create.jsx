@@ -8,7 +8,7 @@ const Create = () => {
     <div className="mb-6">
       <button
         onClick={() => setShowCreatePost(true)}
-        className="fixed bottom-6 right-6 bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-full shadow-lg z-40 flex items-center justify-center pt-[10px] w-16 h-16 text-4xl"
+        className="fixed bottom-6 right-6 bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-full shadow-lg z-40 flex items-center justify-center pt-[10px] w-14 h-14 lg:w-16 lg:h-16 text-4xl"
         title="Tạo bài viết mới"
       >
         +

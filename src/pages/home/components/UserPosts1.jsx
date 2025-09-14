@@ -33,7 +33,7 @@ const UserPosts1 = ({ userId }) => {
   return (
     <PostList
       apiUrl={apiUrl}
-      title="Bài viết của bạn"
+      //title="Bài viết của bạn"
     />
   );
 };

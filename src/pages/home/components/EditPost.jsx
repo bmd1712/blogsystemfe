@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { FaRegCircleXmark } from "react-icons/fa6";
 
 const API_BASE = "http://blogsystem.test/api";
 
@@ -171,10 +172,33 @@ const EditPost = ({ post, onClose, onUpdated }) => {
 
   if (!post) return null;
 
+  // Disable scroll outside
+    useEffect(() => {
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = "auto"; };
+    }, []);
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center overflow-y-auto z-50">
-      <div className="bg-white p-6 rounded-lg w-[600px] max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4">Chỉnh sửa Bài Viết</h2>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50"
+      onClick={onClose} 
+    > 
+      <div
+        className="bg-white pb-6 px-6 rounded-lg w-[600px] max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()} // chặn click bên trong modal
+      >
+        {/* Header */}
+        <div className="sticky top-0 pt-6 flex items-center justify-between pb-4 rounded-t-lg bg-white">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Chỉnh sửa bài viết
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+          >
+            <FaRegCircleXmark size={24} />
+          </button>
+        </div>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Tiêu đề */}
           <div>
@@ -309,7 +333,7 @@ const EditPost = ({ post, onClose, onUpdated }) => {
               {formData.tags.map((t, index) => (
                 <span
                   key={t.id ?? index}
-                  className="relative flex items-center px-2 py-1 bg-green-100 text-green-700 rounded inline-block"
+                  className="relative items-center px-2 py-1 bg-green-100 text-green-700 rounded "
                 >
                   {t.tag}
                   <button

@@ -117,17 +117,17 @@
         );
 
     return (
-        <div className="mt-6">
-        {title && <h2 className="text-xl font-semibold mb-4">{title}</h2>}
+        <div className="mt-6 grid justify-center">
+            {title && <h2 className="text-xl font-semibold mb-4">{title}</h2>}
 
-        {uniquePosts.map((post) => (
-            <PostItem   key={post.id || post.tempId || `post-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`}
-                        post={post} 
-                        currentUser={currentUser} />
-        ))}
+            {uniquePosts.map((post) => (
+                <PostItem   key={post.id || post.tempId || `post-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`}
+                            post={post} 
+                            currentUser={currentUser} />
+            ))}
 
-        {loading && <p>Đang tải thêm...</p>}
-        {!hasMore && <p className="text-gray-500 text-center">Hết bài viết</p>}
+            {loading && <p>Đang tải thêm...</p>}
+            {!hasMore && <p className="text-gray-500 text-center">Hết bài viết</p>}
         </div>
     );
     };

@@ -182,7 +182,11 @@ const CreatePost = ({onSuccess}) => {
       alert("Lỗi khi thêm bài viết");
     }
   };
-
+  // Disable scroll outside
+    useEffect(() => {
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = "auto"; };
+    }, []);
   return (
     <div className="max-w-lg mx-auto p-4 bg-white shadow rounded">
       <h2 className="text-xl font-bold mb-4">Thêm Bài Viết</h2>
@@ -329,7 +333,7 @@ const CreatePost = ({onSuccess}) => {
             {formData.tags.map((t, index) => ( // Thêm index cho key an toàn
               <span
                 key={t.id ?? index}
-                className="relative flex items-center px-2 py-1 bg-green-100 text-green-700 rounded inline-block"
+                className="relative items-center px-2 py-1 bg-green-100 text-green-700 rounded"
               >
                 {t.tag}
                 <button

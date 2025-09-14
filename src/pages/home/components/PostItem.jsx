@@ -98,7 +98,7 @@ const PostItem = ({ post, currentUser }) => {
     };  
 
   return (
-    <div className="bg-white shadow-md shadow-blue-300 rounded-lg p-4 mb-4">
+    <div className="bg-white shadow-md shadow-blue-300 rounded-lg p-4 mb-4 max-w-[350px] sm:max-w-[800px]">
       {/* Header user info */}
       <div className="flex justify-between items-start">
         <div className="flex items-center space-x-2">
@@ -137,13 +137,13 @@ const PostItem = ({ post, currentUser }) => {
               className="w-35 hidden absolute right-0 mt-2 bg-white rounded shadow-lg "
             >
               <button
-                className="flex block px-4 py-2 hover:bg-gray-100 w-full text-left"
+                className="flex px-4 py-2 hover:bg-gray-100 w-full text-left"
                 onClick={() => setEditingPost(post)}
               >
                 <FaPenToSquare className="mt-1 mr-3"/> Chỉnh sửa
               </button>
               <button
-                className="flex block px-4 py-2 hover:bg-gray-100 w-full text-left"
+                className="flex px-4 py-2 hover:bg-gray-100 w-full text-left"
                 onClick={() => setDeletingPost(post)}
               >
                 <FaRegTrashCan className="mt-1 mr-3"/> Xóa
@@ -156,13 +156,15 @@ const PostItem = ({ post, currentUser }) => {
       {/* Content */}
         <p>{post.content}</p>
       {/* Image */}
-      {post.image && (
-        <img
-          src={`${STORAGE_BASE}/${post.image}`}
-          alt={post.title}
-          className="rounded-md my-3"
-        />
-      )}
+      <div className="grid justify-center ">
+        {post.image && (
+          <img
+            src={`${STORAGE_BASE}/${post.image}`}
+            alt={post.title}
+            className="rounded-md my-3 object-cover"
+          />
+        )}
+      </div>
       {/* Actions */}
       <div className="flex space-x-4 mt-3 text-gray-600">
         <button

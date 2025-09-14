@@ -5,7 +5,7 @@ const Posts = () => {
   return (
     <PostList
       apiUrl="http://blogsystem.test/api/posts"
-      title="Bảng tin"
+      //title="Bảng tin"
     />
   )
 }

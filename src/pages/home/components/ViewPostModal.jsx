@@ -138,32 +138,50 @@ const ViewPostModal = ({ post, onClose, onCommentCountChange }) => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex justify-between items-center px-4 py-2 border-b bg-gray-100">
+        <div className="flex justify-between items-center px-4 py-2  bg-gray-100">
           <h3 className="font-bold">Bài viết của {post.user?.email}</h3>
-          <button onClick={onClose} className="text-gray-600 hover:text-black">
-            <FaRegCircleXmark size={22} />
-          </button>
+          <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                >
+                <FaRegCircleXmark size={24} />
+            </button>
         </div>
-
+        <div className="flex px-4 pt-4 items-center space-x-2">
+          <img
+            src={`http://blogsystem.test/storage/${post.user?.avatar || "avatar/default.jpg"}`}
+            alt="avatar"
+            className="w-10 h-10 rounded-full"
+          />
+          <div>
+            <p className="font-semibold">{post.user?.email}</p>
+            <div className="">
+            <p className="text-gray-500 text-sm ">
+                {post.category?.name || ""}
+            </p>
+            {/* <h4 className="text-gray-500 text-sm mb-2">{post.title}</h4> */}
+            </div>
+          </div>
+        </div>
         {/* Nội dung */}
         <div className="p-4 overflow-y-auto flex-1">
-          <h4 className="text-lg font-semibold mb-2">{post.title}</h4>
+          
+          <p className="mb-4">{post.content}</p>
           {post.image && (
             <img
               src={`http://blogsystem.test/storage/${post.image}`}
               alt={post.title}
-              className="rounded mb-4 w-full max-h-64 object-cover"
+              className="m-auto rounded mb-4 w-full max-w-36 max-h-64 object-cover"
             />
           )}
-          <p className="mb-4">{post.content}</p>
 
-          <h4 className="font-semibold mb-2">
-            Đang hiển thị {comments.length} / {total} bình luận
+          <h4 className="font-semibold mb-2 flex justify-end">
+            {comments.length} / {total} bình luận
           </h4>
 
           {comments.length > 0 ? (
             comments.map((c) => (
-              <div key={c.id} className="border-b py-2 flex items-start gap-2">
+              <div key={c.id} className=" py-2 flex items-start gap-2">
                 {c.user?.avatar ? (
                   <img
                     src={`http://blogsystem.test/storage/${c.user.avatar}`}
@@ -176,6 +194,11 @@ const ViewPostModal = ({ post, onClose, onCommentCountChange }) => {
                       {c.user?.email?.[0]?.toUpperCase()}
                     </span>
                   </div>
+                //   <img
+                //     src={`http://blogsystem.test/storage/avatar/default.jpg`}
+                //     alt="avatar"
+                //     className="w-8 h-8 rounded-full object-cover"
+                //   />
                 )}
                 <div className="flex-1">
                   <p className="font-semibold">{c.user?.email}</p>
@@ -183,7 +206,7 @@ const ViewPostModal = ({ post, onClose, onCommentCountChange }) => {
                 </div>
                 {(currentUser?.id === c.user_id || currentUser?.id === post.user_id) && (
                   <button
-                    className="text-red-500 hover:text-red-700"
+                    className="text-red-500 hover:text-red-700 pt-2"
                     onClick={() => deleteComment(c.id)}
                   >
                     <FaRegTrashCan size={18} />
