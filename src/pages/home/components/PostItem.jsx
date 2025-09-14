@@ -3,6 +3,8 @@ import EditPost from "./EditPost";
 import DeleteConfirmModal from "./DeleteConfirmModal";
 import ViewPostModal from "./ViewPostModal";
 import { FaPenToSquare, FaRegTrashCan } from "react-icons/fa6";
+import { FaRegComment } from "react-icons/fa";
+import { BiLike } from "react-icons/bi";
 
 const API_BASE = "http://blogsystem.test/api";
 const STORAGE_BASE = "http://blogsystem.test/storage";
@@ -55,6 +57,7 @@ const PostItem = ({ post, currentUser }) => {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
+      
     } catch (err) {
       console.error(err);
       // rollback nếu lỗi
@@ -91,7 +94,7 @@ const PostItem = ({ post, currentUser }) => {
       const hours = String(date.getHours()).padStart(2, "0");
       const minutes = String(date.getMinutes()).padStart(2, "0");
 
-      return `${day}/${month}/${year} ${hours}:${minutes}`;
+      return ` ${hours}:${minutes} ${day}/${month}/${year}`;
     };  
 
   return (
@@ -106,10 +109,14 @@ const PostItem = ({ post, currentUser }) => {
           />
           <div>
             <p className="font-semibold">{post.user?.email}</p>
-            <p className="text-gray-500 text-sm ">
-              {post.category?.name || ""}
-            </p>
-            <p>{formatPostDate(post.created_at)}</p>
+            <div className="">
+              <p className="text-gray-500 text-sm ">
+                {post.category?.name || ""}
+              </p>
+              <p className="text-gray-500 text-sm "> 
+                {formatPostDate(post.created_at)}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -146,6 +153,8 @@ const PostItem = ({ post, currentUser }) => {
         )}
       </div>
 
+      {/* Content */}
+        <p>{post.content}</p>
       {/* Image */}
       {post.image && (
         <img
@@ -154,23 +163,19 @@ const PostItem = ({ post, currentUser }) => {
           className="rounded-md my-3"
         />
       )}
-
-      {/* Content */}
-      <p>{post.content}</p>
-
       {/* Actions */}
       <div className="flex space-x-4 mt-3 text-gray-600">
         <button
           onClick={handleLike}
-          className={`hover:text-blue-500 ${liked ? "text-blue-600 font-bold" : ""}`}
+          className={`flex hover:text-blue-500 ${liked ? "text-blue-600 font-bold" : ""}`}
         >
-          👍 Thích {likesCount}
+          <BiLike className="mt-1 mr-2"/> Thích {likesCount}
         </button>
         <button
-          className="hover:text-blue-500"
+          className="flex hover:text-blue-500"
           onClick={() => setViewingPost(post)}
         >
-          💬 Bình luận {commentsCount}
+          <FaRegComment className="mt-1 mr-2"/> Bình luận {commentsCount}
         </button>
       </div>
 

@@ -113,20 +113,15 @@ const CreatePost = ({onSuccess}) => {
     }
   };
 
-  // --- Submit form (fix append tags với backtick) ---
+  // --- Submit form ---
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const data = new FormData();
     data.append("title", formData.title);
     data.append("content", formData.content);
-
     if (formData.image) data.append("image", formData.image);
-
-    // Gửi category_id thay vì category object
     if (formData.category) data.append("category_id", formData.category.id);
-
-    // Gửi tags theo tên (tag), không gửi id (fix dấu ngoặc)
     formData.tags.forEach((tag, i) => {
       data.append(`tags[${i}]`, tag.tag);
     });
@@ -145,12 +140,43 @@ const CreatePost = ({onSuccess}) => {
 
       if (!res.ok) throw new Error("Có lỗi xảy ra");
       const result = await res.json();
+      //console.log("API Response after create:", result);
       alert("Thêm thành công!");
-      // Reset form sau submit
+
+      // Lấy currentUser từ localStorage (đã lưu trong PostList.jsx)
+      const storedUser = JSON.parse(localStorage.getItem("currentUser")) || {};
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const tempPost = {
+        tempId,
+        user_id: storedUser.id || 1, // Fallback nếu không có
+        title: formData.title,
+        content: formData.content,
+        image: formData.image ? URL.createObjectURL(formData.image) : null,
+        category: formData.category,
+        tags: formData.tags,
+        likes_count: 0,
+        comments_count: 0,
+        is_liked: false,
+        user: {
+          avatar: storedUser.avatar || "avatar/default.jpg", // Fallback avatar
+          email: storedUser.email || "unknown@example.com", // Fallback email
+          name: storedUser.name || "Unknown User" // Fallback name
+        },
+        created_at: new Date().toISOString() // Thêm thời gian tạo tạm
+      };
+
+      // Lưu vào localStorage
+      localStorage.setItem("tempPost", JSON.stringify(tempPost));
+
+      // Reset form
       setFormData({ title: "", content: "", image: null, category: null, tags: [] });
       setPreview(null);
-      console.log(result);
+
+      // Gọi onSuccess để đóng modal
       if (onSuccess) onSuccess();
+
+      // Dispatch custom event với tempPost
+      window.dispatchEvent(new CustomEvent('postCreated', { detail: tempPost }));
     } catch (err) {
       console.error(err);
       alert("Lỗi khi thêm bài viết");
